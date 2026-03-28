@@ -6,6 +6,7 @@ import { useClerk, UserButton, useUser } from "@clerk/clerk-react";
 import { AppContext } from "../../context/AppContext";
 
 
+
 const Navbar = () => {
 
   const {navigate,isEducator}= useContext(AppContext);

@@ -6,6 +6,7 @@ import humanizeDuration from "humanize-duration";
 import { useAuth, useUser } from "@clerk/clerk-react"
 
 
+
 export const AppContext = createContext();
 
 
@@ -14,7 +15,7 @@ export const AppProvider = (props) => {
   const navigate = useNavigate();
 
   const { getToken } = useAuth()
-  const { user, isLoaded } = useUser()
+  const { user } = useUser()
 
   const [allCourses, setAllCourses] = useState([]);
   const [isEducator, setIsEducator] = useState(true);
@@ -70,15 +71,14 @@ export const AppProvider = (props) => {
   }, []);
 
   const logToken = async () => {
-    const token = await getToken();
-    console.log("TOKEN:", token);
-  };
+  console.log(await getToken({ template: "backend" })); // ✅ updated
+};
 
   useEffect(() => {
     if (user) {
       logToken()
     }
-  }, [isLoaded, user])
+  }, [user])
 
   const value = { currency, allCourses, navigate, calculateAverageRating, isEducator, setIsEducator, calculateChapterTime, calculateCourseDuration, calculateNumberOfLectures, enrolledCourses, fetchUserEnrolledCourses };
 
