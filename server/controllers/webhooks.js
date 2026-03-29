@@ -5,7 +5,6 @@ import Stripe from "stripe";
 import Purchase from "../models/Purchase.js";
 import Course from "../models/Course.js";
 
-
 //API Controller Function to Manage Clerk User with Database
 
 export const clerkWebhooks = async (req, res) => {
@@ -57,22 +56,47 @@ export const clerkWebhooks = async (req, res) => {
 const stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export const stripeWebhooks = async (req, res) => {
-  const sig = request.headers["stripe-signature"];
+  const sig = req.headers["stripe-signature"];
 
   let event;
 
   try {
-    event = Stripe.webhooks.constructEvent(
-      request.body,
+    event = stripeInstance.webhooks.constructEvent(
+      req.body,
       sig,
       process.env.STRIPE_WEBHOOK_SECRET,
     );
+
+    console.log("🔥 webhook triggered", event.type);
   } catch (err) {
-    response.status(400).send(`Webhook Error: ${err.message}`);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
   // Handle the event
   switch (event.type) {
+    case "checkout.session.completed": {
+      const session = event.data.object;
+
+      const purchaseId = session.metadata.purchaseId;
+
+      const purchaseData = await Purchase.findById(purchaseId);
+
+      const userData = await User.findById(purchaseData.userId);
+
+      const courseData = await Course.findById(purchaseData.courseId);
+
+      courseData.enrolledStudents.push(userData._id);
+      await courseData.save();
+
+      userData.enrolledCourses.push(courseData._id);
+      await userData.save();
+
+      purchaseData.status = "completed";
+      await purchaseData.save();
+
+      break;
+    }
+
     case "payment_intent.succeeded": {
       const paymentIntent = event.data.object;
       const paymentIntentId = paymentIntent.id;
