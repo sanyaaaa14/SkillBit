@@ -54,7 +54,6 @@ export const clerkWebhooks = async (req, res) => {
 };
 
 const stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY);
-
 export const stripeWebhooks = async (req, res) => {
   const sig = req.headers["stripe-signature"];
 
@@ -76,8 +75,13 @@ export const stripeWebhooks = async (req, res) => {
   switch (event.type) {
     case "checkout.session.completed": {
       const session = event.data.object;
+      console.log("SESSION METADATA:", session.metadata); 
+      const purchaseId = session.metadata?.purchaseId;
 
-      const purchaseId = session.metadata.purchaseId;
+      if (!purchaseId) {
+        console.log("⚠️ No purchaseId found");
+        return res.json({ received: true });
+      }
 
       const purchaseData = await Purchase.findById(purchaseId);
 
@@ -97,35 +101,35 @@ export const stripeWebhooks = async (req, res) => {
       break;
     }
 
-    case "payment_intent.succeeded": {
-      const paymentIntent = event.data.object;
-      const paymentIntentId = paymentIntent.id;
+    // case "payment_intent.succeeded": {
+    //   const paymentIntent = event.data.object;
+    //   const paymentIntentId = paymentIntent.id;
 
-      const session = await stripeInstance.checkout.sessions.list({
-        payment_intent: paymentIntentId,
-      });
+    //   const session = await stripeInstance.checkout.sessions.list({
+    //     payment_intent: paymentIntentId,
+    //   });
 
-      const { purchaseId } = session.data[0].metadata;
+    //   const { purchaseId } = session.data[0].metadata;
 
-      const purchaseData = await Purchase.findById(purchaseId);
+    //   const purchaseData = await Purchase.findById(purchaseId);
 
-      const userdata = await User.findById(purchaseData.userId);
+    //   const userdata = await User.findById(purchaseData.userId);
 
-      const courseData = await Course.findById(
-        purchaseData.courseId.toString(),
-      );
+    //   const courseData = await Course.findById(
+    //     purchaseData.courseId.toString(),
+    //   );
 
-      courseData.enrolledStudents.push(userdata);
-      await courseData.save();
+    //   courseData.enrolledStudents.push(userdata);
+    //   await courseData.save();
 
-      userdata.enrolledCourses.push(courseData._id);
-      await userdata.save();
+    //   userdata.enrolledCourses.push(courseData._id);
+    //   await userdata.save();
 
-      purchaseData.status = "completed";
-      await purchaseData.save();
+    //   purchaseData.status = "completed";
+    //   await purchaseData.save();
 
-      break;
-    }
+    //   break;
+    // }
 
     case "payment_intent.payment_failed": {
       const paymentIntent = event.data.object;
