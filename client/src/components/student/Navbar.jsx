@@ -4,12 +4,14 @@ import { assets } from "../../assets/assets";
 import { useLocation } from "react-router-dom";
 import { useClerk, UserButton, useUser } from "@clerk/clerk-react";
 import { AppContext } from "../../context/AppContext";
+import axios from "axios";
+import { toast } from "react-toastify";
 
 
 
 const Navbar = () => {
 
-  const {navigate,isEducator}= useContext(AppContext);
+  const {navigate,isEducator,backendURL,setIsEducator,getToken}= useContext(AppContext);
 
 
   const location = useLocation();
@@ -17,6 +19,25 @@ const Navbar = () => {
 
   const { openSignIn } = useClerk();
   const { user } = useUser();
+
+  const becomeEducator = async () => {
+    try {
+      if(isEducator){
+        navigate('/educator');
+        return;
+      }
+      const token = await getToken();
+      const{data}= await axios.get(backendURL+'/api/educator/update-role',{headers:{Authorization:`Bearer ${token}`}})
+      if(data.success){
+        setIsEducator(true);
+        toast.success(data.message);
+      }else{
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
+  }
 
   return (
     <div
@@ -36,7 +57,7 @@ const Navbar = () => {
         {/* Links (only when logged in) */}
         {user && (
           <div className="flex items-center gap-2 ">
-            <button onClick={()=>{navigate('/educator')}} className="cursor-pointer">
+            <button onClick={becomeEducator} className="cursor-pointer">
               {isEducator ? "Educator Dashboard" : "Become Educator"}
             </button>
             <span>|</span>
@@ -65,7 +86,7 @@ const Navbar = () => {
             <Link to="/my-enrollments" className="text-sm font-medium">
               My Enrollments
             </Link>
-             <button onClick={()=>{navigate('/educator')}}>
+             <button onClick={becomeEducator} className="cursor-pointer text-sm font-medium">
               {isEducator ? "Educator Dashboard" : "Become Educator"}
             </button>
             <UserButton afterSignOutUrl="/" />

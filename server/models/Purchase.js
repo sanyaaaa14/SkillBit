@@ -1,4 +1,7 @@
 import mongoose from "mongoose";
+import Course from "./Course.js";
+import User from "./User.js";
+
 
 const PurchaseSchema = new mongoose.Schema(
   {
@@ -28,7 +31,7 @@ export default Purchase;
 
 //Get Educator Dashboard Data(Total Earnings,Enrolled Students ,No. of courses)
 
-export const educatorDashboardData = async () => {
+export const educatorDashboardData = async (req,res) => {
   try {
     const { userId: educator } = req.auth();
 
