@@ -57,19 +57,47 @@ const stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY);
 export const stripeWebhooks = async (req, res) => {
   const sig = req.headers["stripe-signature"];
 
-  let event;
+let event;
 
-  try {
-    event = stripeInstance.webhooks.constructEvent(
-      req.body,
-      sig,
-      process.env.STRIPE_WEBHOOK_SECRET,
-    );
+try {
+  const rawBody = Buffer.isBuffer(req.body)
+    ? req.body
+    : Buffer.from(req.body);
 
-    console.log("🔥 webhook triggered", event.type);
-  } catch (err) {
-    return res.status(400).send(`Webhook Error: ${err.message}`);
-  }
+  event = stripeInstance.webhooks.constructEvent(
+    rawBody,
+    sig,
+    process.env.STRIPE_WEBHOOK_SECRET
+  );
+
+  console.log("🔥 webhook triggered", event.type);
+
+} catch (err) {
+  console.log("❌ STRIPE ERROR:", err.message);
+  return res.status(400).send(`Webhook Error: ${err.message}`);
+}
+}
+  // const sig = req.headers["stripe-signature"];
+
+  // let event;
+
+  // try {
+  //   const rawBody = Buffer.isBuffer(req.body) ? req.body : Buffer.from(req.body);
+  //   event = stripeInstance.webhooks.constructEvent(
+  //     rawBody,
+  //     sig,
+  //     process.env.STRIPE_WEBHOOK_SECRET
+  //   );
+  //   event = stripeInstance.webhooks.constructEvent(
+  //     req.body,
+  //     sig,
+  //     process.env.STRIPE_WEBHOOK_SECRET,
+    
+
+  //   console.log("🔥 webhook triggered", event.type);
+  // } catch (err) {
+  //   return res.status(400).send(`Webhook Error: ${err.message}`);
+  // }
 
   // Handle the event
   switch (event.type) {
