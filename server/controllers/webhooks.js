@@ -75,7 +75,7 @@ export const stripeWebhooks = async (req, res) => {
   switch (event.type) {
     case "checkout.session.completed": {
       const session = event.data.object;
-      console.log("SESSION METADATA:", session.metadata); 
+      console.log("SESSION METADATA:", session.metadata);
       const purchaseId = session.metadata?.purchaseId;
 
       if (!purchaseId) {
@@ -89,11 +89,19 @@ export const stripeWebhooks = async (req, res) => {
 
       const courseData = await Course.findById(purchaseData.courseId);
 
-      courseData.enrolledStudents.push(userData._id);
-      await courseData.save();
+      await Course.findByIdAndUpdate(courseData._id, {
+        $addToSet: { enrolledStudents: userData._id },
+      });
 
-      userData.enrolledCourses.push(courseData._id);
-      await userData.save();
+      await User.findByIdAndUpdate(userData._id, {
+        $addToSet: { enrolledCourses: courseData._id },
+      });
+
+      // courseData.enrolledStudents.push(userData._id);
+      // await courseData.save();
+
+      // userData.enrolledCourses.push(courseData._id);
+      // await userData.save();
 
       purchaseData.status = "completed";
       await purchaseData.save();
